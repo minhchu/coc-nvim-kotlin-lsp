@@ -16,8 +16,12 @@ const CONFIG_SECTION = 'kotlin-lsp';
 const OUTPUT_CHANNEL_NAME = 'Kotlin LSP';
 
 export async function activate(context: ExtensionContext): Promise<void> {
+  const logger = context.logger;
+  logger.info('coc-kotlin-lsp activating');
+
   const config = workspace.getConfiguration(CONFIG_SECTION);
   if (!config.get<boolean>('enable', true)) {
+    logger.info('coc-kotlin-lsp is disabled by config: kotlin-lsp.enable=false');
     return;
   }
 
@@ -28,10 +32,15 @@ export async function activate(context: ExtensionContext): Promise<void> {
   if (!resolvedCommand) {
     const message =
       '[coc-kotlin-lsp] kotlin-lsp executable was not found. Run npm install in the extension folder or set "kotlin-lsp.command" in coc-settings.json.';
+    logger.error(message);
     outputChannel.appendLine(message);
     window.showErrorMessage(message);
     return;
   }
+
+  logger.info(
+    `coc-kotlin-lsp loaded successfully. Using ${resolvedCommand.isBundled ? 'bundled' : 'configured'} server command: ${resolvedCommand.command}`
+  );
 
   if (config.get<boolean>('java.check', true) && !resolvedCommand.isBundled) {
     warnIfJavaVersionUnsupported(outputChannel);
@@ -42,7 +51,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
     command: resolvedCommand.command,
     args,
     options: {
-      cwd: workspace.rootPath || workspace.cwd,
+      cwd: workspace.root || workspace.cwd,
       env: process.env,
     },
   };
@@ -58,7 +67,11 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   const client = new LanguageClient('kotlin-lsp', 'Kotlin Language Server', serverOptions, clientOptions);
   client.trace = parseTrace(config.get<string>('trace.server', 'off'));
-  context.subscriptions.push(services.registLanguageClient(client));
+  context.subscriptions.push(services.registerLanguageClient(client));
+  void client
+    .onReady()
+    .then(() => logger.info('kotlin-lsp language client is ready'))
+    .catch((error) => logger.error(`kotlin-lsp failed to become ready: ${String(error)}`));
 }
 
 function normalizeArgs(value: unknown): string[] {
