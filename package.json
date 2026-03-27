@@ -1,0 +1,77 @@
+{
+  "name": "coc-kotlin-lsp",
+  "version": "0.0.1",
+  "description": "coc.nvim extension for Kotlin Language Server (kotlin-lsp).",
+  "license": "MIT",
+  "main": "./lib/index.js",
+  "engines": {
+    "coc": ">=0.0.83",
+    "node": ">=18"
+  },
+  "activationEvents": [
+    "onLanguage:kotlin"
+  ],
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "Kotlin LSP",
+      "properties": {
+        "kotlin-lsp.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Kotlin LSP language client."
+        },
+        "kotlin-lsp.command": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Custom command to launch kotlin-lsp. When null, use bundled binary downloaded at npm postinstall."
+        },
+        "kotlin-lsp.args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "--stdio"
+          ],
+          "description": "Arguments passed to the kotlin-lsp command."
+        },
+        "kotlin-lsp.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Trace communication between coc.nvim and kotlin-lsp."
+        },
+        "kotlin-lsp.java.check": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn when Java 17+ is not available."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -w -p tsconfig.json",
+    "prepare": "npm run build",
+    "postinstall": "node scripts/download-kotlin-lsp.mjs"
+  },
+  "dependencies": {
+    "coc.nvim": "^0.0.83-next.9"
+  },
+  "devDependencies": {
+    "@types/node": "^14.18.63",
+    "typescript": "^5.8.3"
+  }
+}
