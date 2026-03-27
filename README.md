@@ -5,6 +5,7 @@
 ## Requirements
 
 - Neovim/Vim with `coc.nvim`
+- `coc.nvim` version `>= 0.0.78`
 - Node.js 18+
 - Java 17+ (the extension warns if Java is missing or too old)
 - `unzip` available in your shell (used by the downloader)
@@ -24,12 +25,23 @@ Supported by the bundled downloader in v1:
 
 ## Local Install in coc.nvim
 
+Use local npm install into coc.nvim's extension directory (recommended for coc extensions).
+
 1. `cd /Users/minhchu/codes/coc-nvim-kotlin-lsp`
 2. `npm install`
 3. `npm run build`
-4. Add this to your vim config:
-   - `set runtimepath^=/Users/minhchu/codes/coc-nvim-kotlin-lsp`
-5. Restart Vim/Neovim and open a `.kt` file.
+4. In Vim/Neovim, get coc data dir:
+   - `:echo coc#util#get_data_home()`
+5. In shell, install this extension from local path (replace `$COC_DATA_HOME` with step 4 output):
+   - `mkdir -p "$COC_DATA_HOME/extensions"`
+   - `cd "$COC_DATA_HOME/extensions"`
+   - `npm install /Users/minhchu/codes/coc-nvim-kotlin-lsp`
+6. Restart Vim/Neovim, run `:CocRestart`, then open a `.kt` file.
+7. Verify extension is loaded:
+   - `:CocList extensions`
+   - `:CocCommand workspace.showOutput extensions`
+
+If you previously added `runtimepath` for this project, remove it to avoid confusion.
 
 ## Configuration
 
@@ -51,4 +63,3 @@ Optional command override example:
   ]
 }
 ```
-

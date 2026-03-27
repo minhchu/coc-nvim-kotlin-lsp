@@ -16,7 +16,7 @@ const CONFIG_SECTION = 'kotlin-lsp';
 const OUTPUT_CHANNEL_NAME = 'Kotlin LSP';
 
 export async function activate(context: ExtensionContext): Promise<void> {
-  const logger = context.logger;
+  const logger = getLogger(context);
   logger.info('coc-kotlin-lsp activating');
 
   const config = workspace.getConfiguration(CONFIG_SECTION);
@@ -51,7 +51,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
     command: resolvedCommand.command,
     args,
     options: {
-      cwd: workspace.root || workspace.cwd,
+      cwd: getWorkspaceCwd(),
       env: process.env,
     },
   };
@@ -67,11 +67,31 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   const client = new LanguageClient('kotlin-lsp', 'Kotlin Language Server', serverOptions, clientOptions);
   client.trace = parseTrace(config.get<string>('trace.server', 'off'));
-  context.subscriptions.push(services.registerLanguageClient(client));
+  const register = (services as any).registerLanguageClient ?? (services as any).registLanguageClient;
+  context.subscriptions.push(register.call(services, client));
   void client
     .onReady()
     .then(() => logger.info('kotlin-lsp language client is ready'))
     .catch((error) => logger.error(`kotlin-lsp failed to become ready: ${String(error)}`));
+}
+
+function getWorkspaceCwd(): string {
+  const ws = workspace as any;
+  return ws.root ?? ws.rootPath ?? ws.cwd;
+}
+
+function getLogger(context: ExtensionContext): {
+  info: (...args: any[]) => void;
+  error: (...args: any[]) => void;
+} {
+  const logger = (context as any).logger;
+  if (logger && typeof logger.info === 'function' && typeof logger.error === 'function') {
+    return logger;
+  }
+  return {
+    info: (...args: any[]) => console.log(...args),
+    error: (...args: any[]) => console.error(...args),
+  };
 }
 
 function normalizeArgs(value: unknown): string[] {

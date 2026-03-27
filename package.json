@@ -5,7 +5,7 @@
   "license": "MIT",
   "main": "./lib/index.js",
   "engines": {
-    "coc": ">=0.0.83",
+    "coc": ">=0.0.78",
     "node": ">=18"
   },
   "activationEvents": [
