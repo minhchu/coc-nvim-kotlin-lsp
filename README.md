@@ -14,7 +14,7 @@
 
 When you run `npm install` in this extension:
 
-- it downloads a pinned standalone Kotlin LSP release (`262.2310.0`) for your OS/arch
+- it downloads a pinned standalone Kotlin LSP release (`262.4739.0`) for your OS/arch
 - it verifies the SHA-256 checksum
 - it extracts the server into `server/kotlin-lsp`
 

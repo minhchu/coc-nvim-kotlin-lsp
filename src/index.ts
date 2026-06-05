@@ -123,8 +123,8 @@ function findBundledLauncher(extensionPath: string): string | null {
   }
 
   const directCandidates = process.platform === 'win32'
-    ? [path.join(installRoot, 'kotlin-lsp.cmd'), path.join(installRoot, 'bin', 'languageServer64.exe')]
-    : [path.join(installRoot, 'kotlin-lsp.sh'), path.join(installRoot, 'bin', 'languageServer')];
+    ? [path.join(installRoot, 'bin', 'intellij-server.bat'), path.join(installRoot, 'kotlin-lsp.cmd'), path.join(installRoot, 'bin', 'languageServer64.exe')]
+    : [path.join(installRoot, 'bin', 'intellij-server'), path.join(installRoot, 'kotlin-lsp.sh'), path.join(installRoot, 'bin', 'languageServer')];
   for (const directPath of directCandidates) {
     if (isExecutableFile(directPath)) {
       return directPath;
@@ -143,8 +143,8 @@ function findBundledLauncher(extensionPath: string): string | null {
   }
 
   const recursiveCandidates = process.platform === 'win32'
-    ? ['kotlin-lsp.cmd', 'languageServer64.exe']
-    : ['kotlin-lsp.sh', 'languageServer'];
+    ? ['intellij-server.bat', 'kotlin-lsp.cmd', 'languageServer64.exe']
+    : ['intellij-server', 'kotlin-lsp.sh', 'languageServer'];
   return findFileRecursively(installRoot, recursiveCandidates);
 }
 

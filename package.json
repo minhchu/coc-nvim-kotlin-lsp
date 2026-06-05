@@ -65,7 +65,8 @@
     "build": "tsc -p tsconfig.json",
     "watch": "tsc -w -p tsconfig.json",
     "prepare": "npm run build",
-    "postinstall": "node scripts/download-kotlin-lsp.mjs"
+    "postinstall": "node scripts/download-kotlin-lsp.mjs",
+    "upgrade": "node scripts/download-kotlin-lsp.mjs"
   },
   "dependencies": {
     "coc.nvim": "^0.0.83-next.9"
