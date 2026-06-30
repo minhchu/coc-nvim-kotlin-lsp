@@ -10,7 +10,7 @@ import { pipeline } from 'node:stream/promises';
 import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 
-const KOTLIN_LSP_VERSION = process.env.KOTLIN_LSP_VERSION || '262.4739.0';
+const KOTLIN_LSP_VERSION = process.env.KOTLIN_LSP_VERSION || '262.7569.0';
 // Standalone Kotlin LSP distribution (not the VS Code `.vsix`). Asset names follow
 // `kotlin-server-<version><archSuffix>.<ext>`, where x64 has no arch suffix and arm64
 // adds `-aarch64`, and the extension is platform specific.

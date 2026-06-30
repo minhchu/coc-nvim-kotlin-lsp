@@ -1,6 +1,6 @@
 {
   "name": "coc-kotlin-lsp",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "coc.nvim extension for Kotlin Language Server (kotlin-lsp).",
   "license": "MIT",
   "main": "./lib/index.js",
@@ -57,6 +57,11 @@
           "type": "boolean",
           "default": true,
           "description": "Warn when Java 17+ is not available."
+        },
+        "kotlin-lsp.autoUpdate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically check for and install new kotlin-lsp releases on startup (at most once per day). Only applies when using the bundled server."
         }
       }
     }
@@ -72,7 +77,7 @@
     "coc.nvim": "^0.0.83-next.9"
   },
   "devDependencies": {
-    "@types/node": "^14.18.63",
+    "@types/node": "^18.19.130",
     "typescript": "^5.8.3"
   }
 }

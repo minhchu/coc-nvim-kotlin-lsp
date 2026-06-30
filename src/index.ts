@@ -8,12 +8,14 @@ import {
   window,
   workspace,
 } from 'coc.nvim';
-import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { spawn, spawnSync } from 'node:child_process';
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const CONFIG_SECTION = 'kotlin-lsp';
 const OUTPUT_CHANNEL_NAME = 'Kotlin LSP';
+const GITHUB_LATEST_RELEASE_URL = 'https://api.github.com/repos/Kotlin/kotlin-lsp/releases/latest';
+const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 export async function activate(context: ExtensionContext): Promise<void> {
   const logger = getLogger(context);
@@ -73,6 +75,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
     .onReady()
     .then(() => logger.info('kotlin-lsp language client is ready'))
     .catch((error) => logger.error(`kotlin-lsp failed to become ready: ${String(error)}`));
+
+  if (resolvedCommand.isBundled) {
+    void checkForUpdatesInBackground(context, logger);
+  }
 }
 
 function getWorkspaceCwd(): string {
@@ -189,6 +195,103 @@ function isExecutableFile(filePath: string): boolean {
   } catch (_error) {
     return false;
   }
+}
+
+async function checkForUpdatesInBackground(
+  context: ExtensionContext,
+  logger: ReturnType<typeof getLogger>,
+): Promise<void> {
+  const config = workspace.getConfiguration(CONFIG_SECTION);
+  if (!config.get<boolean>('autoUpdate', true)) {
+    return;
+  }
+
+  const installRoot = path.join(context.extensionPath, 'server', 'kotlin-lsp');
+  const lastCheckFile = path.join(installRoot, '.last-update-check');
+  const versionFile = path.join(installRoot, '.kotlin-lsp-version');
+
+  let installedVersion: string;
+  try {
+    installedVersion = readFileSync(versionFile, 'utf8').trim();
+    if (!installedVersion) return;
+  } catch {
+    return;
+  }
+
+  try {
+    const ts = Number(readFileSync(lastCheckFile, 'utf8').trim());
+    if (!Number.isNaN(ts) && Date.now() - ts < UPDATE_CHECK_INTERVAL_MS) {
+      return;
+    }
+  } catch {
+    // file doesn't exist yet — proceed
+  }
+
+  // Write timestamp before the network call so concurrent startups don't all check.
+  try {
+    writeFileSync(lastCheckFile, `${Date.now()}\n`, 'utf8');
+  } catch {
+    // non-fatal
+  }
+
+  let latestVersion: string;
+  try {
+    const response = await fetch(GITHUB_LATEST_RELEASE_URL, {
+      headers: { 'User-Agent': 'coc-kotlin-lsp' },
+    });
+    if (!response.ok) {
+      logger.error(`[coc-kotlin-lsp] Update check failed: ${response.status} ${response.statusText}`);
+      return;
+    }
+    const data = await response.json() as { tag_name: string };
+    latestVersion = data.tag_name.replace(/^v/, '');
+    if (!latestVersion) return;
+  } catch (err) {
+    logger.error(`[coc-kotlin-lsp] Update check error: ${String(err)}`);
+    return;
+  }
+
+  if (!isNewerVersion(latestVersion, installedVersion)) {
+    return;
+  }
+
+  logger.info(`[coc-kotlin-lsp] New kotlin-lsp ${latestVersion} available (installed: ${installedVersion}). Downloading...`);
+
+  const downloadScript = path.join(context.extensionPath, 'scripts', 'download-kotlin-lsp.mjs');
+  const downloadError = await runChildScript(process.execPath, [downloadScript], { KOTLIN_LSP_VERSION: latestVersion });
+
+  if (downloadError) {
+    logger.error(`[coc-kotlin-lsp] Auto-update to ${latestVersion} failed: ${downloadError}`);
+    return;
+  }
+
+  logger.info(`[coc-kotlin-lsp] kotlin-lsp updated to ${latestVersion}`);
+  void window.showInformationMessage(`kotlin-lsp updated to ${latestVersion}. Reload to apply.`);
+}
+
+function isNewerVersion(candidate: string, installed: string): boolean {
+  const parse = (v: string) => v.split('.').map((n) => Number.parseInt(n, 10) || 0);
+  const a = parse(candidate);
+  const b = parse(installed);
+  const len = Math.max(a.length, b.length);
+  for (let i = 0; i < len; i++) {
+    const diff = (a[i] ?? 0) - (b[i] ?? 0);
+    if (diff !== 0) return diff > 0;
+  }
+  return false;
+}
+
+function runChildScript(executable: string, args: string[], extraEnv: Record<string, string>): Promise<string | null> {
+  return new Promise((resolve) => {
+    const stderrChunks: string[] = [];
+    const child = spawn(executable, args, {
+      env: { ...process.env, ...extraEnv },
+      stdio: ['ignore', 'ignore', 'pipe'],
+    });
+    child.stderr?.on('data', (chunk: Buffer) => stderrChunks.push(chunk.toString()));
+    child.on('close', (code) => resolve(code === 0 ? null : (stderrChunks.join('').trim() || `exit code ${code}`)));
+    child.on('error', (err) => resolve(err.message));
+  });
 }
 
 function parseTrace(trace: string): Trace {
